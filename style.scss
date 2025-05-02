@@ -1,0 +1,67 @@
+// https://gitlab.gnome.org/GNOME/gtk/-/blob/gtk-3-24/gtk/theme/Adwaita/_colors-public.scss
+$fg-color: #{"@theme_fg_color"};
+$bg-color: #{"@theme_bg_color"};
+
+window.Bar {
+  background: transparent;
+  color: $fg-color;
+  font-weight: bold;
+  $icon-size: 30px;
+
+  >centerbox {
+    background: $bg-color;
+    min-height: $icon-size;
+    /* border-radius: 10px; */
+    /* margin: 8px; */
+  }
+
+  button {
+    border-radius: 8px;
+    margin: 2px;
+  }
+
+  .windowTitle {
+  }
+
+  .Wifi {
+    margin-left: 5px;
+    margin-right: 5px;
+  }
+
+  .SysTray icon {
+    font-size: $icon-size;
+  }
+
+  .Media {
+    label {
+      margin-left: 7px;
+    }
+
+    .Cover {
+      min-height: $icon-size;
+      min-width: $icon-size;
+      border-radius: 2px;
+      background-position: center;
+      background-size: contain;
+      margin-left: 5px;
+      margin-right: 5px;
+    }
+  }
+
+  .Battery {
+    margin-left: 5px;
+    margin-right: 5px;
+
+    label {
+      padding-left: 0;
+      margin-left: 3px;
+    }
+  }
+
+
+  .Time {
+    margin-left: 5px;
+    margin-right: 10px;
+  }
+}
+
