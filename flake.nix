@@ -15,32 +15,28 @@
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
   in {
-    packages.${system}. default = pkgs.stdenvNoCC.mkDerivation rec {
-      name = "Astal shell";
-      src = ./.;
+    packages.${system} = {
+        # astal = astal.packages.${system}.default;
+        # ags = ags.packages.${system}.default;
+        default = ags.lib.bundle {
+            inherit pkgs;
+            src = ./.;
+            name = "custom-widgets"; # name of executable
+            entry = "app.ts";
+            gtk4 = false;
 
-      nativeBuildInputs = [
-        ags.packages.${system}.default
-        pkgs.wrapGAppsHook
-        pkgs.gobject-introspection
-      ];
-
-      buildInputs = with astal.packages.${system}; [
-        astal3
-        io
-        hyprland
-        bluetooth
-        battery
-        mpris
-        network
-        tray
-        # any other package
-      ];
-
-      installPhase = ''
-        mkdir -p $out/bin
-        ags bundle app.ts $out/bin/${name}
-      '';
+            # additional libraries and executables to add to gjs' runtime
+            extraPackages = [
+                astal.packages.${system}.io
+                astal.packages.${system}.hyprland
+                astal.packages.${system}.bluetooth
+                astal.packages.${system}.battery
+                astal.packages.${system}.mpris
+                astal.packages.${system}.network
+                astal.packages.${system}.tray
+            # pkgs.fzf
+            ];
+        };
     };
   };
 }
