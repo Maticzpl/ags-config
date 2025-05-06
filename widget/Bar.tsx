@@ -1,10 +1,12 @@
 import { App, Astal, Gtk, Gdk } from "astal/gtk3"
+import { timeout } from "astal/time"
 import { Variable, bind, exec } from "astal"
 import Hyprland from "gi://AstalHyprland"
 import Battery from "gi://AstalBattery"
 import Network from "gi://AstalNetwork"
 import Tray from "gi://AstalTray"
 import Mpris from "gi://AstalMpris"
+import Apps from "gi://AstalApps"
 
 function SysTray() {
     const tray = Tray.get_default()
@@ -163,6 +165,115 @@ function BatteryLevel() {
     </box>
 }
 
+let cachedCoords: any = null;
+let isCooldown = false;
+let pendingCall = false;
+
+function workspaceCoords(): any {
+    if (!isCooldown) {
+        cachedCoords = JSON.parse(exec("hyprctl -j hyprtasking workspaces"));
+        isCooldown = true;
+
+        timeout(500, () => {
+            isCooldown = false;
+            if (pendingCall) {
+                pendingCall = false;
+                workspaceCoords();
+            }
+        });
+
+        return cachedCoords;
+    } else {
+        pendingCall = true;
+        return cachedCoords;
+    }
+}
+
+function Workspaces() {
+    const hypr = Hyprland.get_default()
+    const apps = new Apps.Apps()
+    const width = 2;
+    const height = 1;
+
+    const classReplace = {
+        firefox: "schizofox"
+    };
+
+    const classPriority = {
+        Alacritty: -1
+    };
+
+    const important = {
+        nvim: "Neovim"
+    }
+
+    return <box className="Workspaces" vertical={true}>
+        {bind(hypr, "focusedWorkspace").as(focused => {
+            const monitor = focused.get_monitor().id
+            const coords = workspaceCoords()[monitor]
+            const root = coords[focused.get_id()]
+
+            let rows = []
+            for (let ry = -height; ry <= height; ry++) {
+                let cells = [];
+                for (let rx = -width; rx <= width; rx++) {
+                    const x = root.x + rx
+                    const y = root.y + ry
+
+                    let id = undefined
+                    for (let workspaceId in coords) {
+                        if (coords[workspaceId].x == x && coords[workspaceId].y == y)
+                            id = workspaceId
+                    }
+
+                    const center = (rx == 0 && ry == 0) ? "center" : ""
+
+                    if (id) {
+                        const workspace = hypr.get_workspace(id)
+                        if (workspace) {
+                            let clients = workspace.get_clients()
+                            clients.sort((a, b) => {
+                                let extraA = 0
+                                let extraB = 0
+                                for (let title in important) {
+                                    extraA += a.title.includes(title) ? 1 : 0;
+                                    extraB += b.title.includes(title) ? 1 : 0;
+                                }
+
+                                return (extraB + classPriority[b.initialClass] || 0) - (extraA + classPriority[a.initialClass] || 0)
+                            })
+                            const client = clients[0]
+
+                            if (client) {
+                                let appClass = classReplace[client.initialClass] || client.initialClass
+                                if (appClass == "Alacritty") {
+                                    for (let title in important) {
+                                        if (client.title.includes(title))
+                                            appClass = important[title]
+                                    }
+                                }
+
+                                const app = apps.fuzzy_query(appClass)[0] || apps.fuzzy_query(client.initialTitle)[0]
+                                if (app)
+                                    cells.push(<icon icon={app.iconName} className={center}/>)
+                                else
+                                    cells.push(<label label="?" className={center}/>)
+
+                                continue
+                            }
+                        }
+                    }
+
+                    cells.push(<label label=" " className={center}/>)
+                }
+                rows.push(<box>{cells}</box>)
+            }
+
+            return rows;
+        })}
+    </box>
+}
+
 export default function Bar(gdkmonitor: Gdk.Monitor) {
     const { TOP, LEFT, RIGHT } = Astal.WindowAnchor
 
@@ -175,7 +286,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
         application={App}>
         <centerbox>
             <box halign={Gtk.Align.START}>
-                <SysTray/>
+                <Workspaces/>
                 <Media/>
             </box>
             <box halign={Gtk.Align.CENTER}>

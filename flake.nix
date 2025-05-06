@@ -34,6 +34,7 @@
                 astal.packages.${system}.mpris
                 astal.packages.${system}.network
                 astal.packages.${system}.tray
+                astal.packages.${system}.apps
             # pkgs.fzf
             ];
         };

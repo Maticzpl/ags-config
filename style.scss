@@ -58,6 +58,29 @@ window.Bar {
     }
   }
 
+  .Workspaces {
+    $size: 10px;
+    font-size: $size;
+
+    label {
+      min-width: $size;
+    }
+
+    icon {
+      min-width: $size;
+    }
+
+    .center {
+      background-color: #FFF3;
+      border-radius: 2px;
+
+      $padding: 1px;
+      padding: $padding;
+      font-size: calc($size - 2 * $padding);
+      min-width: calc($size - 2 * $padding);
+    }
+  }
+
 
   .Time {
     margin-left: 5px;
