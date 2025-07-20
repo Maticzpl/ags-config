@@ -4,6 +4,7 @@ import { Variable, bind, exec } from "astal"
 import Hyprland from "gi://AstalHyprland"
 import Battery from "gi://AstalBattery"
 import Network from "gi://AstalNetwork"
+import Bluetooth from "gi://AstalBluetooth"
 import Tray from "gi://AstalTray"
 import Mpris from "gi://AstalMpris"
 import Apps from "gi://AstalApps"
@@ -30,7 +31,7 @@ function Wifi() {
 
     return <box visible={wifi.as(Boolean)} className="Wifi">
         {wifi.as(wifi => wifi && (
-            <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "alacritty -T 'Network Manager' -e nmtui"])}}
+            <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "nm-connection-editor"])}}
                 tooltipText={bind(wifi, "ssid").as(String)}>
                 <icon
                     icon={bind(wifi, "iconName")}
@@ -38,7 +39,22 @@ function Wifi() {
             </button>
         ))}
     </box>
+}
 
+function BT() {
+    const bt = Bluetooth.get_default()
+    const device = bind(bt, "devices").as(devs => devs.filter(d => d.connected)[0])
+
+    return <box visible={device.as(Boolean)} className="Bluetooth">
+        {device.as(dev => dev && (
+            <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "overskride"])}}
+                tooltipText={bind(dev, "name").as(String)}>
+                <icon
+                    icon="bluetooth-symbolic"
+                />
+            </button>
+        ))}
+    </box>
 }
 
 function Time() {
@@ -70,6 +86,7 @@ function Title() {
 }
 
 
+let previousPlayerId = 0;
 function Media() {
     const mpris = Mpris.get_default()
 // - ${ps[0].artist}`
@@ -82,33 +99,45 @@ function Media() {
     //exec(["playerctl", "--player", "playerctld", "next"])
 
     return bind(mpris, "players").as(ps => {
-        if (ps[0]) {
+        if (ps.length <= previousPlayerId)
+            previousPlayerId = 0;
+
+        let player = ps[previousPlayerId]
+
+        for (const p of ps) {
+            if (p.get_playback_status() == Mpris.PlaybackStatus.PLAYING)
+                player = p;
+        }
+
+        previousPlayerId = ps.indexOf(player)
+
+        if (player) {
             return <box className="Media">
                 <box
                     className="Cover"
                     valign={Gtk.Align.CENTER}
-                    css={bind(ps[0], "coverArt").as(cover =>
+                    css={bind(player, "coverArt").as(cover =>
                         `background-image: url('${cover}');`
                     )}
                 />
                 <box className="Controls">
-                    <button onClicked={()=>ps[0].previous()}>
+                    <button onClicked={()=>player.previous()}>
                         <icon
                             tooltipText="Previous"
                             icon="media-skip-backward-symbolic"
                         />
                     </button>
-                    <button onClicked={()=>ps[0].play_pause()}>
+                    <button onClicked={()=>player.play_pause()}>
                         <icon
                             tooltipText="Next"
                             icon={
-                                bind(ps[0], "playbackStatus").as(status => status != Mpris.PlaybackStatus.PLAYING ?
+                                bind(player, "playbackStatus").as(status => status != Mpris.PlaybackStatus.PLAYING ?
                                     "media-playback-start-symbolic" : "media-playback-pause-symbolic"
                                 )
                             }
                         />
                     </button>
-                    <button onClicked={()=>ps[0].next()}>
+                    <button onClicked={()=>player.next()}>
                         <icon
                             tooltipText="Next"
                             icon="media-skip-forward-symbolic"
@@ -116,8 +145,8 @@ function Media() {
                     </button>
                 </box>
                 <label
-                    label={bind(ps[0], "metadata").as(() =>
-                        `${ps[0].title}`
+                    label={bind(player, "metadata").as(() =>
+                        `${player.title}`
                     )}
                 />
             </box>
@@ -165,30 +194,6 @@ function BatteryLevel() {
     </box>
 }
 
-let cachedCoords: any = null;
-let isCooldown = false;
-let pendingCall = false;
-
-function workspaceCoords(): any {
-    if (!isCooldown) {
-        cachedCoords = JSON.parse(exec("hyprctl -j hyprtasking workspaces"));
-        isCooldown = true;
-
-        timeout(500, () => {
-            isCooldown = false;
-            if (pendingCall) {
-                pendingCall = false;
-                workspaceCoords();
-            }
-        });
-
-        return cachedCoords;
-    } else {
-        pendingCall = true;
-        return cachedCoords;
-    }
-}
-
 function Workspaces() {
     const hypr = Hyprland.get_default()
     const apps = new Apps.Apps()
@@ -196,7 +201,7 @@ function Workspaces() {
     const height = 1;
 
     const classReplace = {
-        firefox: "schizofox"
+        // firefox: "schizofox"
     };
 
     const classPriority = {
@@ -207,24 +212,37 @@ function Workspaces() {
         nvim: "Neovim"
     }
 
+    const COLS = 6; // TODO: DONT HARDCODE!!!!!!!!!!!!!!!
+    const ROWS = 6;
+    function workspaceCoords(id: number) {
+        id--;
+
+        let monitor = Math.floor(id / (COLS * ROWS));
+        id %= COLS*ROWS;
+        let row = Math.floor(id / COLS);
+        let column = id % COLS;
+        
+        return { x: column, y: row, monitor: monitor };
+    }
+
+    function workspaceId(monitor: number, x: number, y: number) {
+        return (monitor * ROWS + y) * COLS + x + 1;
+    }
+
     return <box className="Workspaces" vertical={true}>
         {bind(hypr, "focusedWorkspace").as(focused => {
-            const monitor = focused.get_monitor().id
-            const coords = workspaceCoords()[monitor]
-            const root = coords[focused.get_id()]
+            const monitor = focused.get_monitor().id;
+            const root = workspaceCoords(focused.get_id());
+
 
             let rows = []
-            for (let ry = -height; ry <= height; ry++) {
+            for (let ry = -height; ry<= height; ry++) {
                 let cells = [];
                 for (let rx = -width; rx <= width; rx++) {
                     const x = root.x + rx
                     const y = root.y + ry
 
-                    let id = undefined
-                    for (let workspaceId in coords) {
-                        if (coords[workspaceId].x == x && coords[workspaceId].y == y)
-                            id = workspaceId
-                    }
+                    let id = workspaceId(monitor, x, y)
 
                     const center = (rx == 0 && ry == 0) ? "center" : ""
 
@@ -294,6 +312,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
             </box>
             <box halign={Gtk.Align.END}>
                 <Wifi/>
+                <BT/>
                 <BatteryLevel/>
                 <Time/>
             </box>
