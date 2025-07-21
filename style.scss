@@ -8,11 +8,8 @@ window.Bar {
   font-weight: bold;
   $icon-size: 30px;
 
-  >centerbox {
+  > centerbox {
     background: $bg-color;
-    min-height: $icon-size;
-    /* border-radius: 10px; */
-    /* margin: 8px; */
   }
 
   button {
@@ -20,16 +17,9 @@ window.Bar {
     margin: 2px;
   }
 
-  .windowTitle {
-  }
-
-  .Wifi, .Bluetooth {
-    margin-left: 2px;
-    margin-right: 2px;
-  }
-
-  .SysTray icon {
-    font-size: $icon-size;
+  .Time {
+    margin-left: 5px;
+    margin-right: 10px;
   }
 
   .Media {
@@ -38,53 +28,51 @@ window.Bar {
     }
 
     .Cover {
-      min-height: $icon-size;
-      min-width: $icon-size;
       border-radius: 2px;
-      background-position: center;
-      background-size: contain;
       margin-left: 5px;
       margin-right: 5px;
     }
   }
 
-  .Battery {
-    margin-left: 5px;
-    margin-right: 5px;
-
-    label {
-      padding-left: 0;
-      margin-left: 3px;
-    }
-  }
-
   .Workspaces {
-    $size: 10px;
+    $size: calc($icon-size / 3);
+    $totalWidth: 6;
+    $totalHeight: 6;
     font-size: $size;
 
-    label {
+    .cell {
       min-width: $size;
-    }
-
-    icon {
-      min-width: $size;
+      font-size: $size;
     }
 
     .center {
       background-color: #FFF3;
       border-radius: 2px;
 
-      $padding: 1px;
-      padding: $padding;
-      font-size: calc($size - 2 * $padding);
-      min-width: calc($size - 2 * $padding);
+      min-width: $size;
+      font-size: $size;
+      // $padding: 1px;
+      // padding: $padding;
+      // font-size: calc($size - 2 * $padding);
+      // min-width: calc($size - 2 * $padding);
+    }
+
+    .oob {
+      font-size: 0px;
+      min-width: 0px;
+    }
+
+    .xp1 {
+      border-left: 1px solid $fg-color;
+    }
+    .yp1 {
+      border-top: 1px solid $fg-color;
+    }
+    .xp#{$totalWidth} {
+      border-right: 1px solid $fg-color;
+    }
+    .yp#{$totalHeight} {
+      border-bottom: 1px solid $fg-color;
     }
   }
-
-
-  .Time {
-    margin-left: 5px;
-    margin-right: 10px;
-  }
 }
-

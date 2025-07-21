@@ -1,43 +1,81 @@
 {
+  description = "My Awesome Desktop Shell";
+
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    astal = {
-      url = "github:aylur/astal";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+
     ags = {
       url = "github:aylur/ags";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, astal, ags }: let
+  outputs = {
+    self,
+    nixpkgs,
+    ags,
+  }: let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
+    pname = "custom-widgets";
+    entry = "app.ts";
+
+    astalPackages = with ags.packages.${system}; [
+      io
+      hyprland
+      bluetooth
+      battery
+      mpris
+      network
+      tray
+      apps
+
+      astal4 # or astal3 for gtk3
+      # notifd tray wireplumber
+    ];
+
+    extraPackages =
+      astalPackages
+      ++ [
+        pkgs.libadwaita
+        pkgs.libsoup_3
+      ];
   in {
     packages.${system} = {
-        # astal = astal.packages.${system}.default;
-        # ags = ags.packages.${system}.default;
-        default = ags.lib.bundle {
-            inherit pkgs;
-            src = ./.;
-            name = "custom-widgets"; # name of executable
-            entry = "app.ts";
-            gtk4 = false;
+      default = pkgs.stdenv.mkDerivation {
+        name = pname;
+        src = ./.;
 
-            # additional libraries and executables to add to gjs' runtime
-            extraPackages = [
-                astal.packages.${system}.io
-                astal.packages.${system}.hyprland
-                astal.packages.${system}.bluetooth
-                astal.packages.${system}.battery
-                astal.packages.${system}.mpris
-                astal.packages.${system}.network
-                astal.packages.${system}.tray
-                astal.packages.${system}.apps
-            # pkgs.fzf
-            ];
-        };
+        nativeBuildInputs = with pkgs; [
+          wrapGAppsHook
+          gobject-introspection
+          ags.packages.${system}.default
+        ];
+
+        buildInputs = extraPackages ++ [pkgs.gjs];
+
+        installPhase = ''
+          runHook preInstall
+
+          mkdir -p $out/bin
+          mkdir -p $out/share
+          cp -r * $out/share
+          ags bundle ${entry} $out/bin/${pname} -d "SRC='$out/share'"
+
+          runHook postInstall
+        '';
+      };
+    };
+    # ags types -d "/home/maticzpl/Documents/dev/ags-config" "Astal*"
+
+    devShells.${system} = {
+      default = pkgs.mkShell {
+        buildInputs = [
+          (ags.packages.${system}.default.override {
+            inherit extraPackages;
+          })
+        ];
+      };
     };
   };
 }
