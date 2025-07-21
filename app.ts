@@ -5,6 +5,7 @@ import Bar from "./widget/bar/Bar"
 app.start({
   css: style,
   main() {
-    app.get_monitors().map(Bar)
+    const monitors = app.get_monitors()
+    monitors.map(m => Bar(m, monitors.indexOf(m)))
   },
 })

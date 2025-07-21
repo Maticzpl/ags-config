@@ -105,7 +105,10 @@ function Media() {
   </box>
 }
 
-function Workspaces() {
+interface WorkspaceProps {
+  monitor_id: number
+}
+function Workspaces({ monitor_id } : WorkspaceProps) {
   const hypr = Hyprland.get_default()
   const apps = new Apps.Apps()
   const width = 2;
@@ -142,9 +145,12 @@ function Workspaces() {
   function workspaceId(monitor: number, x: number, y: number) {
     return (monitor * ROWS + y) * COLS + x + 1;
   }
+  
+  const monitor = hypr.get_monitor(monitor_id)
 
+  // TODO: FOLLOW BASED ON MONITOR, NOT FOCUSED
   return <box>
-    <With value={createBinding(hypr, "focusedWorkspace")}>
+    <With value={createBinding(monitor, "activeWorkspace")}>
       {((focused: Hyprland.Workspace) => {
           const monitor = focused.get_monitor().id;
           const root = workspaceCoords(focused.get_id());
@@ -216,7 +222,7 @@ function Workspaces() {
   </box>
 }
 
-export default function Bar(gdkmonitor: Gdk.Monitor) {
+export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
   const { TOP, LEFT, RIGHT } = Astal.WindowAnchor
 
   return (
@@ -231,7 +237,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor) {
     >
       <centerbox cssName="centerbox">
         <box $type="start">
-          <Workspaces />
+          <Workspaces monitor_id={monitor_id} />
           <Media />
         </box>
         <box $type="center">
