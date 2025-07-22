@@ -2,6 +2,8 @@
 $fg-color: #{"@theme_fg_color"};
 $bg-color: #{"@theme_bg_color"};
 
+@define-color theme_bg_color_transparent alpha(#{$bg_color}, 0.85);
+
 window.Bar {
   background: transparent;
   color: $fg-color;
@@ -9,7 +11,7 @@ window.Bar {
   $icon-size: 30px;
 
   > centerbox {
-    background: $bg-color;
+    background: #{"@theme_bg_color_transparent"}; 
   }
 
   button {
@@ -23,20 +25,14 @@ window.Bar {
   }
 
   .Time {
-    margin-left: 5px;
-    margin-right: 10px;
+    margin-left: 2px;
+    margin-right: 2px;
   }
 
   .Media {
-    label {
+    .Title {
       margin-left: 7px;
     }
-
-    // .Cover {
-    //   border-radius: 2px;
-    //   margin-left: 5px;
-    //   margin-right: 5px;
-    // }
 
     .Cover {
       $cover-size: calc($icon-size + 7px);

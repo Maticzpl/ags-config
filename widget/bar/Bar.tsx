@@ -1,7 +1,7 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
-import { Accessor, createBinding, createComputed, createConnection, createState, For, With } from "ags"
+import { Accessor, createBinding, createComputed, createState, For, With } from "ags"
 import Hyprland from "gi://AstalHyprland"
 import Mpris from "gi://AstalMpris"
 import Apps from "gi://AstalApps"
@@ -100,7 +100,7 @@ function Media() {
               />
             </button>
           </box>
-          <ScrolledLabel speed={1} width={200}
+          <ScrolledLabel speed={1} width={200} class="Title"
             text={createBinding(player, "title")}
             tooltipText={createBinding(player, "title")}/>
         </box>
@@ -204,7 +204,8 @@ function Workspaces({ monitor_id } : WorkspaceProps) {
   };
 
   const important: { [key: string]: string } = {
-    nvim: "Neovim"
+    nvim: "Neovim",
+    btop: "btop++"
   }
 
   const COLS = 6; // TODO: DONT HARDCODE!!!!!!!!!!!!!!!
@@ -224,76 +225,75 @@ function Workspaces({ monitor_id } : WorkspaceProps) {
     return (monitor * ROWS + y) * COLS + x + 1;
   }
   
-  const monitor = hypr.get_monitor(monitor_id)
+  const monitor = hypr.get_monitor(monitor_id);
 
-  // TODO: FOLLOW BASED ON MONITOR, NOT FOCUSED
   return <box>
     <With value={createBinding(monitor, "activeWorkspace")}>
       {((active: Hyprland.Workspace) => {
-          const root = workspaceCoords(active.get_id());
+        const root = workspaceCoords(active.get_id());
 
-          let rows = []
-          for (let ry = -height; ry<= height; ry++) {
-              let cells = [];
-              for (let rx = -width; rx <= width; rx++) {
-                  const x = root.x + rx
-                  const y = root.y + ry
+        let rows = []
+        for (let ry = -height; ry<= height; ry++) {
+          let cells = [];
+          for (let rx = -width; rx <= width; rx++) {
+            const x = root.x + rx
+            const y = root.y + ry
 
-                  let id = workspaceId(monitor_id, x, y)
+            let id = workspaceId(monitor_id, x, y)
 
-                  let cssClasses = (rx == 0 && ry == 0) ? "center" : "cell"
-                  if (x >= 0 && y >= 0 && x < totalWidth && y < totalHeight)
-                      cssClasses += ` xp${x + 1} yp${y + 1}`
-                  else
-                      cssClasses += "oob"
+            let cssClasses = (rx == 0 && ry == 0) ? "center" : "cell"
+            if (x >= 0 && y >= 0 && x < totalWidth && y < totalHeight)
+                cssClasses += ` xp${x + 1} yp${y + 1}`
+            else
+                cssClasses += "oob"
 
-                  if (id) {
-                      const workspace = hypr.get_workspace(id)
-                      if (workspace) {
-                          let clients = workspace.get_clients()
-                          clients.sort((a, b) => {
-                              let extraA = 0
-                              let extraB = 0
-                              for (let title in important) {
-                                  extraA += a.title.includes(title) ? 1 : 0;
-                                  extraB += b.title.includes(title) ? 1 : 0;
-                              }
-
-                              return (extraB + classPriority[b.initialClass] || 0) - (extraA + classPriority[a.initialClass] || 0)
-                          })
-                          const client = clients[0]
-
-                          if (client) {
-                              let appClass = classReplace[client.initialClass] || client.initialClass
-                              if (appClass == "Alacritty") {
-                                  for (let title in important) {
-                                      if (client.title.includes(title))
-                                          appClass = important[title]
-                                  }
-                              }
-
-                              if (appClass.includes(".")) {
-                                  const split = appClass.split(".")
-                                  appClass = split[split.length - 1]
-                              }
-
-                              const app = apps.fuzzy_query(appClass)[0] || apps.fuzzy_query(client.initialTitle)[0]
-                              if (app)
-                                  cells.push(<image pixelSize={10} iconName={app.iconName} class={cssClasses}/>)
-                              else
-                                  cells.push(<label label="?" class={cssClasses}/>)
-
-                              continue
-                          }
-                      }
+            if (id) {
+              const workspace = hypr.get_workspace(id)
+              if (workspace) {
+                let clients = workspace.get_clients()
+                clients.sort((a, b) => {
+                  let extraA = 0
+                  let extraB = 0
+                  for (let title in important) {
+                    extraA += a.title.includes(title) ? 1 : 0;
+                    extraB += b.title.includes(title) ? 1 : 0;
                   }
 
-                  cells.push(<label label=" " class={cssClasses}/>)
-              }
-              rows.push(<box>{cells}</box>)
-          }
+                  return (extraB + classPriority[b.initialClass] || 0) - (extraA + classPriority[a.initialClass] || 0)
+                })
+                const client = clients[0]
 
-          return <box class="Workspaces" orientation={Gtk.Orientation.VERTICAL}>{rows}</box>
+                if (client) {
+                  let appClass = classReplace[client.initialClass] || client.initialClass
+                  if (appClass == "Alacritty") {
+                    for (let title in important) {
+                      if (client.title.includes(title))
+                        appClass = important[title]
+                    }
+                  }
+
+                  if (appClass.includes(".")) {
+                    const split = appClass.split(".")
+                    appClass = split[split.length - 1]
+                  }
+
+                  const app = apps.fuzzy_query(appClass)[0] || apps.fuzzy_query(client.initialTitle)[0]
+                  if (app)
+                    cells.push(<image pixelSize={10} iconName={app.iconName} class={cssClasses}/>)
+                  else
+                    cells.push(<label label="?" class={cssClasses}/>)
+
+                  continue
+                }
+              }
+            }
+
+            cells.push(<label label=" " class={cssClasses}/>)
+          }
+          rows.push(<box>{cells}</box>)
+        }
+
+        return <box class="Workspaces" orientation={Gtk.Orientation.VERTICAL}>{rows}</box>
       })}
     </With>
   </box>
