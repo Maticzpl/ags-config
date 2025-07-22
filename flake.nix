@@ -74,6 +74,7 @@
           (ags.packages.${system}.default.override {
             inherit extraPackages;
           })
+          pkgs.nodejs
         ];
       };
     };

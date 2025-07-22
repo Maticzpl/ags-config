@@ -1,19 +1,33 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
-import { createBinding, createState, With } from "ags"
+import { Accessor, createBinding, createComputed, createConnection, createState, For, With } from "ags"
 import Hyprland from "gi://AstalHyprland"
 import Mpris from "gi://AstalMpris"
 import Apps from "gi://AstalApps"
+import Tray from "gi://AstalTray"
+import Network from "gi://AstalNetwork"
+import Bluetooth from "gi://AstalBluetooth"
+import { exec } from "ags/process"
+import { ScrolledLabel } from "../../components/ScrollingText"
+
+
+function stringLimit(limit: number) {
+  return (title?: string) => {
+    if (!title)
+      return "";
+
+    if (title.length > limit) {
+      title = title.substring(0, limit - 3) + "...";
+    }
+    return title;
+  }
+}
 
 function Time() {
   const time = createPoll("", 1000, "date +'%Y-%m-%d %H:%M:%S'");
 
-  return <menubutton 
-    $type="end"
-    hexpand
-    halign={Gtk.Align.END}
-    class="Time">
+  return <menubutton class="Time" valign={Gtk.Align.CENTER}>
     <label label={time} />
     <popover>
       <Gtk.Calendar />
@@ -25,20 +39,12 @@ function Title() {
   const hypr = Hyprland.get_default();
   const focused = createBinding(hypr, "focusedClient");
 
-  function getTitle(client: Hyprland.Client) {
-    if (!client)
-      return "";
-
-    const titleLimit = 50;
-    let title = client?.title ?? "";
-    if (title.length > titleLimit) {
-      title = title.substring(0, titleLimit - 3) + "...";
-    }
-    return title;
-  }
-
   return <box class="windowTitle" visible={focused.as(Boolean)}>
-    <label label={focused.as(getTitle)} />
+    <With value={focused}>
+      {(focused => focused && 
+        <label label={createBinding(focused, "title").as(stringLimit(50))} />
+      )}
+    </With>
   </box>
 }
 
@@ -62,27 +68,23 @@ function Media() {
     return player;
   });
 
+  // TODO: Big nice popover of cover art with stuff, big playter ui basically
 
   return <box class="Media" visible={player.as(Boolean)}>
     <With value={player}>
-      {(player => 
+      {(player => player &&
         <box>
-          <box class="Cover">
-            <image
-              visible={createBinding(player, "coverArt").as(Boolean)}
-              valign={Gtk.Align.CENTER}
-              pixelSize={38}
-              file={createBinding(player, "coverArt")}
-            />
-          </box>
+          <box class="Cover" 
+            css={createBinding(player, "artUrl").as(url => `background-image: url('${url}');`)}
+            valign={Gtk.Align.CENTER}/>
           <box class="Controls">
-            <button onClicked={()=>player.previous()}>
+            <button onClicked={()=>player.previous()} valign={Gtk.Align.CENTER}>
               <image
                 tooltipText="Previous"
                 iconName="media-skip-backward-symbolic"
               />
             </button>
-            <button onClicked={()=>player.play_pause()}>
+            <button onClicked={()=>player.play_pause()} valign={Gtk.Align.CENTER}>
               <image
                 tooltipText="Next"
                 iconName={ createBinding(player, "playback_status").as(status => 
@@ -91,15 +93,91 @@ function Media() {
                 )}
               />
             </button>
-            <button onClicked={()=>player.next()}>
+            <button onClicked={()=>player.next()} valign={Gtk.Align.CENTER}>
               <image
                 tooltipText="Next"
                 iconName="media-skip-forward-symbolic"
               />
             </button>
           </box>
-          <label label={createBinding(player, "title")} />
+          <ScrolledLabel speed={1} width={200}
+            text={createBinding(player, "title")}
+            tooltipText={createBinding(player, "title")}/>
         </box>
+      )}
+    </With>
+  </box>
+}
+
+
+function SysTray() {
+  const tray = Tray.get_default()
+
+  const init = (btn: Gtk.MenuButton, item: Tray.TrayItem) => {
+    btn.menuModel = item.menuModel
+    btn.insert_action_group("dbusmenu", item.actionGroup)
+    item.connect("notify::action-group", () => {
+      btn.insert_action_group("dbusmenu", item.actionGroup)
+    })
+  }
+
+  return <box class="SysTray">
+    <For each={createBinding(tray, "items")}>
+      {(item: Tray.TrayItem, index: Accessor<number>) => (
+        <menubutton $={(self) => init(self, item)}>
+          <image 
+            gicon={createBinding(item, "gicon")} 
+            pixelSize={25}
+          />
+        </menubutton>
+      )}
+    </For>
+  </box>
+}
+
+function Wifi() {
+  const network = Network.get_default()
+
+  const net = createBinding(network, "primary").as(_ => {
+    return network.get_wired() || network.get_wifi();
+  });
+
+  function tooltip(net: Network.Wifi | Network.Wired | null): Accessor<string> | string {
+    if (net instanceof Network.Wifi) {
+      const ssid = createBinding(net, "ssid");
+      const strength = createBinding(net, "strength");
+
+      return createComputed([ssid, strength], (ssid, strength) => `${ssid}\n${strength}%`);
+    }
+    else if (net instanceof Network.Wired){
+      return "Wired";
+    }
+    return "";
+  }
+
+  return <box class="Wifi" valign={Gtk.Align.CENTER}>
+    <With value={net}>
+      {(net: Network.Wifi | Network.Wired | null) => (net && 
+        <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "nm-connection-editor"])}}
+          tooltipText={tooltip(net)}>
+          <image iconName={createBinding(net, "iconName")} />
+        </button>
+      )}
+    </With>
+  </box>
+}
+
+function BT() {
+  const bt = Bluetooth.get_default();
+  const devices = createBinding(bt, "devices");
+
+  return <box class="Bluetooth" valign={Gtk.Align.CENTER}>
+    <With value={devices.as(devs => devs.filter(d => d.connected)[0])}>
+      {(device: Bluetooth.Device | null) => (
+        <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "overskride"])}}
+          tooltipText={device ? createBinding(device, "name").as(String) : ""}>
+          <image iconName="bluetooth-symbolic" />
+        </button>
       )}
     </With>
   </box>
@@ -151,9 +229,8 @@ function Workspaces({ monitor_id } : WorkspaceProps) {
   // TODO: FOLLOW BASED ON MONITOR, NOT FOCUSED
   return <box>
     <With value={createBinding(monitor, "activeWorkspace")}>
-      {((focused: Hyprland.Workspace) => {
-          const monitor = focused.get_monitor().id;
-          const root = workspaceCoords(focused.get_id());
+      {((active: Hyprland.Workspace) => {
+          const root = workspaceCoords(active.get_id());
 
           let rows = []
           for (let ry = -height; ry<= height; ry++) {
@@ -162,7 +239,7 @@ function Workspaces({ monitor_id } : WorkspaceProps) {
                   const x = root.x + rx
                   const y = root.y + ry
 
-                  let id = workspaceId(monitor, x, y)
+                  let id = workspaceId(monitor_id, x, y)
 
                   let cssClasses = (rx == 0 && ry == 0) ? "center" : "cell"
                   if (x >= 0 && y >= 0 && x < totalWidth && y < totalHeight)
@@ -236,14 +313,17 @@ export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
       application={app}
     >
       <centerbox cssName="centerbox">
-        <box $type="start">
+        <box halign={Gtk.Align.START} $type="start">
           <Workspaces monitor_id={monitor_id} />
           <Media />
         </box>
-        <box $type="center">
+        <box halign={Gtk.Align.CENTER} $type="center">
           <Title />
         </box>
-        <box $type="end">
+        <box halign={Gtk.Align.END} $type="end">
+          <box hexpand={true} />
+          <Wifi />
+          <BT />
           <Time />
         </box>
       </centerbox>
