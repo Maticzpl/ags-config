@@ -51,8 +51,8 @@ function Title() {
   </box>
 }
 
+const [skipLive, setSkipLive] = createState(false);
 function Media() {
-  // TODO: Switch player sources
   const mpris = Mpris.get_default();
 
   const [previousPlayerId, setPreviousPlayerId] = createState(0);
@@ -122,7 +122,12 @@ function Media() {
                 <Gtk.Revealer transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
                   revealChild={advancedExpand}
                   class="Advanced">
-                  <Gtk.CheckButton label="Skip live" $={(self) => checkbox = self} />
+                  <Gtk.CheckButton $={(self) => checkbox=self}
+                    label="Skip live" 
+                    active={skipLive}
+                    onToggled={checkbox => {
+                      setSkipLive(checkbox.active)
+                    }}/>
                 </Gtk.Revealer>
               </box>
             </popover>
