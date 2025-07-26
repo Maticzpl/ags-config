@@ -112,22 +112,27 @@ function Media() {
                   text={createBinding(player, "album")} />
                 <MusicControls player={player} size={31} halign={Gtk.Align.CENTER}/>
 
-                <button class="Advanced" onClicked={_ => {
-                  setAdvancedExpand(!advancedExpand.get())
-                }}>
+                <button class={advancedExpand.as(expand => `Advanced ${expand ? "expanded" :""}`)}
+                  onClicked={_ => {
+                    setAdvancedExpand(!advancedExpand.get())
+                  }}
+                >
                   <image iconName={advancedExpand.as(expand => 
                     expand ? "pan-up-symbolic" : "pan-down-symbolic"
                   )}/>
                 </button>
                 <Gtk.Revealer transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
                   revealChild={advancedExpand}
-                  class="Advanced">
-                  <Gtk.CheckButton $={(self) => checkbox=self}
-                    label="Skip live" 
-                    active={skipLive}
-                    onToggled={checkbox => {
-                      setSkipLive(checkbox.active)
-                    }}/>
+                  class={advancedExpand.as(expand => `Advanced ${expand ? "expanded" :""}`)}
+                >
+                  <box>
+                    <Gtk.CheckButton $={(self) => checkbox=self}
+                      label="Skip live" 
+                      active={skipLive}
+                      onToggled={checkbox => {
+                        setSkipLive(checkbox.active)
+                      }}/>
+                  </box>
                 </Gtk.Revealer>
               </box>
             </popover>
