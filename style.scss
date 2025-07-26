@@ -3,6 +3,19 @@ $fg-color: #{"@theme_fg_color"};
 $bg-color: #{"@theme_bg_color"};
 
 @define-color theme_bg_color_transparent alpha(#{$bg_color}, 0.85);
+@define-color theme_bg_color_darker shade(#{$bg_color}, 0.9);
+
+MusicControls {
+  button {
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+}
+
+popover contents {
+  padding: 0;
+  box-shadow: 0px 0px 20px 1px #FFF1;
+}
 
 window.Bar {
   background: transparent;
@@ -30,8 +43,60 @@ window.Bar {
   }
 
   .Media {
+    margin-left: 10px;
     .Title {
       margin-left: 7px;
+    }
+
+    .BigPlayer {
+      $width: 15em;
+
+      .BigCover {
+        margin-top: 5px;
+        margin-left: 5px;
+        margin-right: 5px;
+        min-width: $width;
+        min-height: $width;
+
+        border-radius: 10px;
+        // border-radius: $width;
+        background-position: center;
+        background-size: contain;
+        background-repeat: no-repeat;
+      }
+
+      MusicControls {
+        margin-top: 2px;
+      }
+
+      .BigTitle {
+        font-size: 20px;
+
+        margin-top: 4px;
+      }
+      .Artist, .Album {
+        font-weight: normal;
+      }
+
+      button.Advanced {
+        margin: 0;
+        margin-top: 5px;
+        padding: 0;
+        min-height: unset;
+
+        border-radius: 0;
+
+        transition-duration: 0.2s;
+      }
+      button.Advanced:hover {
+        background-color: $bg-color;
+      }
+      .Advanced {
+        background-color: #{"@theme_bg_color_darker"};
+
+        padding: 5px;
+        min-width: $width;
+      }
     }
 
     .Cover {
@@ -42,8 +107,13 @@ window.Bar {
       background-position: center;
       background-size: contain;
       background-repeat: no-repeat;
+      filter: brightness(1.1);
       margin-left: 5px;
       margin-right: 5px;
+
+      > button {
+        background-color: transparent;
+      }
     }
   }
 
@@ -52,6 +122,10 @@ window.Bar {
     $totalWidth: 6;
     $totalHeight: 6;
     font-size: $size;
+
+    // background: #{"@theme_bg_color_darker"}; 
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+    padding-right: 5px;
 
     .cell, .center {
       min-width: $size;

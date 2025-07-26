@@ -10,7 +10,9 @@ import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
 import { ScrolledLabel } from "../../components/ScrollingText"
+import { MusicControls } from "../../components/MusicControls"
 
+let cursorPointer = Gdk.Cursor.new_from_name("pointer", null)
 
 function stringLimit(limit: number) {
   return (title?: string) => {
@@ -24,10 +26,11 @@ function stringLimit(limit: number) {
   }
 }
 
+
 function Time() {
   const time = createPoll("", 1000, "date +'%Y-%m-%d %H:%M:%S'");
 
-  return <menubutton class="Time" valign={Gtk.Align.CENTER}>
+  return <menubutton class="Time" valign={Gtk.Align.CENTER} cursor={cursorPointer}>
     <label label={time} />
     <popover>
       <Gtk.Calendar />
@@ -49,9 +52,11 @@ function Title() {
 }
 
 function Media() {
+  // TODO: Switch player sources
   const mpris = Mpris.get_default();
 
   const [previousPlayerId, setPreviousPlayerId] = createState(0);
+  const [advancedExpand, setAdvancedExpand] = createState(false);
   const player = createBinding(mpris, "players").as(players => {
     if (players.length <= previousPlayerId.get())
       setPreviousPlayerId(0);
@@ -68,39 +73,62 @@ function Media() {
     return player;
   });
 
-  // TODO: Big nice popover of cover art with stuff, big playter ui basically
+  let checkbox: Gtk.CheckButton | undefined;
 
   return <box class="Media" visible={player.as(Boolean)}>
     <With value={player}>
       {(player => player &&
         <box>
-          <box class="Cover" 
+          <menubutton class="Cover" 
+            cursor={cursorPointer}
             css={createBinding(player, "artUrl").as(url => `background-image: url('${url}');`)}
-            valign={Gtk.Align.CENTER}/>
-          <box class="Controls">
-            <button onClicked={()=>player.previous()} valign={Gtk.Align.CENTER}>
-              <image
-                tooltipText="Previous"
-                iconName="media-skip-backward-symbolic"
-              />
-            </button>
-            <button onClicked={()=>player.play_pause()} valign={Gtk.Align.CENTER}>
-              <image
-                tooltipText="Next"
-                iconName={ createBinding(player, "playback_status").as(status => 
-                  status != Mpris.PlaybackStatus.PLAYING ?
-                    "media-playback-start-symbolic" : "media-playback-pause-symbolic"
-                )}
-              />
-            </button>
-            <button onClicked={()=>player.next()} valign={Gtk.Align.CENTER}>
-              <image
-                tooltipText="Next"
-                iconName="media-skip-forward-symbolic"
-              />
-            </button>
-          </box>
-          <ScrolledLabel speed={1} width={200} class="Title"
+            valign={Gtk.Align.CENTER}>
+            <label/>
+            <popover class="BigPlayer">
+              <box orientation={Gtk.Orientation.VERTICAL}>
+                <box
+                  class="BigCover"
+                  tooltipText={createBinding(player, "title").as(title => {
+                    if (title.toLowerCase().includes("live") && checkbox?.active) {
+                      player.position = player.length;// - 0.1
+                    }
+                    return "";
+                  })}
+                  css={createBinding(player, "artUrl").as(url => `background-image: url('${url}');`)}/>
+                <ScrolledLabel speed={1} class="BigTitle"
+                  hexpand
+                  align_text={Gtk.Align.CENTER}
+                  text={createBinding(player, "title")}
+                  tooltipText={createBinding(player, "title")}/>
+                <ScrolledLabel speed={1} class="Artist"
+                  hexpand
+                  align_text={Gtk.Align.CENTER}
+                  tooltipText={createBinding(player, "artist")}
+                  text={createBinding(player, "artist")} />
+                <ScrolledLabel speed={1} class="Album"
+                  hexpand
+                  align_text={Gtk.Align.CENTER}
+                  tooltipText={createBinding(player, "album")}
+                  text={createBinding(player, "album")} />
+                <MusicControls player={player} size={31} halign={Gtk.Align.CENTER}/>
+
+                <button class="Advanced" onClicked={_ => {
+                  setAdvancedExpand(!advancedExpand.get())
+                }}>
+                  <image iconName={advancedExpand.as(expand => 
+                    expand ? "pan-up-symbolic" : "pan-down-symbolic"
+                  )}/>
+                </button>
+                <Gtk.Revealer transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
+                  revealChild={advancedExpand}
+                  class="Advanced">
+                  <Gtk.CheckButton label="Skip live" $={(self) => checkbox = self} />
+                </Gtk.Revealer>
+              </box>
+            </popover>
+          </menubutton>
+          <MusicControls player={player}/>
+          <ScrolledLabel speed={1} widthRequest={200} class="Title"
             text={createBinding(player, "title")}
             tooltipText={createBinding(player, "title")}/>
         </box>
@@ -124,7 +152,7 @@ function SysTray() {
   return <box class="SysTray">
     <For each={createBinding(tray, "items")}>
       {(item: Tray.TrayItem, index: Accessor<number>) => (
-        <menubutton $={(self) => init(self, item)}>
+        <menubutton $={(self) => init(self, item)} cursor={cursorPointer}>
           <image 
             gicon={createBinding(item, "gicon")} 
             pixelSize={25}
@@ -159,6 +187,7 @@ function Wifi() {
     <With value={net}>
       {(net: Network.Wifi | Network.Wired | null) => (net && 
         <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "nm-connection-editor"])}}
+          cursor={cursorPointer}
           tooltipText={tooltip(net)}>
           <image iconName={createBinding(net, "iconName")} />
         </button>
@@ -175,6 +204,7 @@ function BT() {
     <With value={devices.as(devs => devs.filter(d => d.connected)[0])}>
       {(device: Bluetooth.Device | null) => (
         <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "overskride"])}}
+          cursor={cursorPointer}
           tooltipText={device ? createBinding(device, "name").as(String) : ""}>
           <image iconName="bluetooth-symbolic" />
         </button>
@@ -238,6 +268,8 @@ function Workspaces({ monitor_id } : WorkspaceProps) {
           for (let rx = -width; rx <= width; rx++) {
             const x = root.x + rx
             const y = root.y + ry
+            if (x < 0 || y < 0 || x >= COLS || y >= ROWS)
+              continue;
 
             let id = workspaceId(monitor_id, x, y)
 

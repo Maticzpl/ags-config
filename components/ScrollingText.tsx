@@ -1,38 +1,47 @@
 import { Accessor, This } from "ags";
-import { getter, register, setter, signal } from "ags/gobject";
+import { getter, register, setter } from "ags/gobject";
 import { Gtk } from "ags/gtk4";
 import { interval } from "ags/time";
 import AstalIO from "gi://AstalIO?version=0.1";
 
 interface ScrolledLabelProps extends Partial<Gtk.ScrolledWindow> {
   text: string,
-  width: number,
+  // width?: number,
   bounceCooldown?: number,
-  speed?: number
+  speed?: number,
+  align_text?: Gtk.Align
 }
 
-@register({ Implements: [Gtk.Buildable] })
+@register({ Implements: [Gtk.Buildable], CssName: "ScrolledLabel" })
 export class ScrolledLabel extends Gtk.ScrolledWindow {
   innerLabel!: Gtk.Label
   cooldown: number;
 
   constructor (props: ScrolledLabelProps) {
-    super({
-      widthRequest: props.width,
-      hscrollbarPolicy: Gtk.PolicyType.EXTERNAL,
-      vscrollbarPolicy: Gtk.PolicyType.NEVER,
-    });
+
+    props = props;
+    props.hscrollbarPolicy ||= Gtk.PolicyType.EXTERNAL;
+    props.vscrollbarPolicy ||= Gtk.PolicyType.NEVER;
+
+    // if (props.width)
+    //   parent_props.width_request = props.width;
+    let parent_props = JSON.parse(JSON.stringify(props));
+    delete parent_props.text;
+    delete parent_props.bounceCooldown;
+    delete parent_props.speed;
+    delete parent_props.align_text;
+
+    super(parent_props);
 
     this.cooldown = props.bounceCooldown || 120;
     this.speed = props.speed || 0.5;
 
-    // this.hadjustment.value = (this.hadjustment.upper + this.hadjustment.lower)/2;
     void (
       <This this={this as ScrolledLabel}>
-        <label
+        <label 
           $={(self) => {this.innerLabel = self}}
           label={props.text}
-          halign={Gtk.Align.START}
+          halign={props.align_text || Gtk.Align.START}
         />
       </This>
     );
