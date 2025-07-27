@@ -11,6 +11,7 @@ import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
 import { ScrolledLabel } from "../../components/ScrollingText"
 import { MusicControls } from "../../components/MusicControls"
+import { MediaPlayer } from "../../components/MediaPlayer"
 
 let cursorPointer = Gdk.Cursor.new_from_name("pointer", null)
 
@@ -50,103 +51,6 @@ function Title() {
     </With>
   </box>
 }
-
-const [skipLive, setSkipLive] = createState(false);
-function Media() {
-  const mpris = Mpris.get_default();
-
-  const [previousPlayerId, setPreviousPlayerId] = createState(0);
-  const [advancedExpand, setAdvancedExpand] = createState(false);
-  const player = createBinding(mpris, "players").as(players => {
-    if (players.length <= previousPlayerId.get())
-      setPreviousPlayerId(0);
-
-    let player = players[previousPlayerId.get()];
-
-    for (const p of players) {
-      if (p.get_playback_status() == Mpris.PlaybackStatus.PLAYING)
-        player = p;
-    }
-
-    setPreviousPlayerId(players.indexOf(player));
-
-    return player;
-  });
-
-  let checkbox: Gtk.CheckButton | undefined;
-
-  return <box class="Media" visible={player.as(Boolean)}>
-    <With value={player}>
-      {(player => player &&
-        <box>
-          <menubutton class="Cover" 
-            cursor={cursorPointer}
-            css={createBinding(player, "artUrl").as(url => `background-image: url('${url}');`)}
-            valign={Gtk.Align.CENTER}>
-            <label/>
-            <popover class="BigPlayer">
-              <box orientation={Gtk.Orientation.VERTICAL}>
-                <box
-                  class="BigCover"
-                  tooltipText={createBinding(player, "title").as(title => {
-                    if (title.toLowerCase().includes("live") && checkbox?.active) {
-                      player.position = player.length;// - 0.1
-                    }
-                    return "";
-                  })}
-                  css={createBinding(player, "artUrl").as(url => `background-image: url('${url}');`)}/>
-                <ScrolledLabel speed={1} class="BigTitle"
-                  hexpand
-                  align_text={Gtk.Align.CENTER}
-                  text={createBinding(player, "title")}
-                  tooltipText={createBinding(player, "title")}/>
-                <ScrolledLabel speed={1} class="Artist"
-                  hexpand
-                  align_text={Gtk.Align.CENTER}
-                  tooltipText={createBinding(player, "artist")}
-                  text={createBinding(player, "artist")} />
-                <ScrolledLabel speed={1} class="Album"
-                  hexpand
-                  align_text={Gtk.Align.CENTER}
-                  tooltipText={createBinding(player, "album")}
-                  text={createBinding(player, "album")} />
-                <MusicControls player={player} size={31} halign={Gtk.Align.CENTER}/>
-
-                <button class={advancedExpand.as(expand => `Advanced ${expand ? "expanded" :""}`)}
-                  onClicked={_ => {
-                    setAdvancedExpand(!advancedExpand.get())
-                  }}
-                >
-                  <image iconName={advancedExpand.as(expand => 
-                    expand ? "pan-up-symbolic" : "pan-down-symbolic"
-                  )}/>
-                </button>
-                <Gtk.Revealer transitionType={Gtk.RevealerTransitionType.SLIDE_DOWN}
-                  revealChild={advancedExpand}
-                  class={advancedExpand.as(expand => `Advanced ${expand ? "expanded" :""}`)}
-                >
-                  <box>
-                    <Gtk.CheckButton $={(self) => checkbox=self}
-                      label="Skip live" 
-                      active={skipLive}
-                      onToggled={checkbox => {
-                        setSkipLive(checkbox.active)
-                      }}/>
-                  </box>
-                </Gtk.Revealer>
-              </box>
-            </popover>
-          </menubutton>
-          <MusicControls player={player}/>
-          <ScrolledLabel speed={1} widthRequest={200} class="Title"
-            text={createBinding(player, "title")}
-            tooltipText={createBinding(player, "title")}/>
-        </box>
-      )}
-    </With>
-  </box>
-}
-
 
 function SysTray() {
   const tray = Tray.get_default()
@@ -357,7 +261,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
       <centerbox cssName="centerbox">
         <box halign={Gtk.Align.START} $type="start">
           <Workspaces monitor_id={monitor_id} />
-          <Media />
+          <MediaPlayer />
         </box>
         <box halign={Gtk.Align.CENTER} $type="center">
           <Title />
