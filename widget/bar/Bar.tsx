@@ -1,16 +1,13 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
-import { Accessor, createBinding, createComputed, createState, For, With } from "ags"
+import { Accessor, createBinding, createComputed, For, With } from "ags"
 import Hyprland from "gi://AstalHyprland"
-import Mpris from "gi://AstalMpris"
 import Apps from "gi://AstalApps"
 import Tray from "gi://AstalTray"
 import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
-import { ScrolledLabel } from "../../components/ScrollingText"
-import { MusicControls } from "../../components/MusicControls"
 import { MediaPlayer } from "../../components/MediaPlayer"
 
 let cursorPointer = Gdk.Cursor.new_from_name("pointer", null)

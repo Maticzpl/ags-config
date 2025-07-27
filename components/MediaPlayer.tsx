@@ -1,5 +1,5 @@
 import { Accessor, createBinding, createState, For, Setter, State, This } from "ags";
-import { ParamSpec, register } from "ags/gobject";
+import { register } from "ags/gobject";
 import { Gdk, Gtk } from "ags/gtk4";
 import Mpris from "gi://AstalMpris";
 import { ScrolledLabel } from "./ScrollingText";
