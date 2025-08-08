@@ -9,21 +9,8 @@ import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
 import { MediaPlayer } from "../../components/MediaPlayer"
-
-let cursorPointer = Gdk.Cursor.new_from_name("pointer", null)
-
-function stringLimit(limit: number) {
-  return (title?: string) => {
-    if (!title)
-      return "";
-
-    if (title.length > limit) {
-      title = title.substring(0, limit - 3) + "...";
-    }
-    return title;
-  }
-}
-
+import { Bat } from "./Battery"
+import { cursorPointer, stringLimit } from "../../util"
 
 function Time() {
   const time = createPoll("", 1000, "date +'%Y-%m-%d %H:%M:%S'");
@@ -36,14 +23,65 @@ function Time() {
   </menubutton>
 }
 
-function Title() {
-  const hypr = Hyprland.get_default();
-  const focused = createBinding(hypr, "focusedClient");
+// function WithAll<T>(props: { children: (val: T) => GObject.Object, value: Accessor<T> }) {
+//   return <box>
+//     <With value={props.value}>
+//       { unwrapped => {
+//         if (unwrapped instanceof Accessor) {
+//           return <WithAll value={unwrapped}>
+//             {props.children}
+//           </WithAll>
+//         }
+//         else {
+//           print(unwrapped) // executed too many times when switching workspaces
+//           return unwrapped && props.children(unwrapped) 
+//         }
+//       }}
+//     </With>
+//   </box>
+// }
 
-  return <box class="windowTitle" visible={focused.as(Boolean)}>
-    <With value={focused}>
-      {(focused => focused && 
-        <label label={createBinding(focused, "title").as(stringLimit(50))} />
+
+function Title(props: { monitor_id: number }) {
+  const hypr = Hyprland.get_default();
+  const monitor = createBinding(hypr, "monitors").as(m => m[props.monitor_id])
+  const ws = createBinding(monitor.get(), "activeWorkspace") // TODO: DONT USE .get
+
+  // const title = monitor(
+  // m => createBinding(m, "activeWorkspace")
+  //   (ws => 
+  //     createComputed(
+  //       [createBinding(ws, "lastClient"), createBinding(hypr, "focusedClient")],
+  //       (wsClient, focused) => {
+  //         if (focused?.monitor.id == monitor.get().id)
+  //           return focused;
+  //         else
+  //           return wsClient;
+  //       }
+  //     )
+  //     (cl => createBinding(cl, "title"))
+  //   )
+  // )
+
+  // return <WithAll value={title}>
+  //   {t => <label label={stringLimit(50)(t)} />}
+  // </WithAll>
+
+  return <box class="windowTitle" >
+    <With value={ws}>
+      {ws => (
+        <box><With value={createComputed(
+            [createBinding(ws, "lastClient"), createBinding(hypr, "focusedClient")],
+            (wsClient, focused) => {
+              if (focused?.monitor?.id == monitor.get().id)
+                return focused;
+              else
+                return wsClient;
+            })}>
+          {(cl: Hyprland.Client) => 
+              cl && <label label={createBinding(cl, "title").as(stringLimit(50))} />
+          }
+        </With></box>
       )}
     </With>
   </box>
@@ -100,7 +138,7 @@ function Wifi() {
         <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "nm-connection-editor"])}}
           cursor={cursorPointer}
           tooltipText={tooltip(net)}>
-          <image iconName={createBinding(net, "iconName")} />
+          <image iconName={createBinding(net, "iconName")} pixelSize={20} />
         </button>
       )}
     </With>
@@ -117,7 +155,7 @@ function BT() {
         <button onClicked={() => {exec(["hyprctl", "dispatch", "exec", "overskride"])}}
           cursor={cursorPointer}
           tooltipText={device ? createBinding(device, "name").as(String) : ""}>
-          <image iconName="bluetooth-symbolic" />
+          <image iconName="bluetooth-symbolic" pixelSize={20} />
         </button>
       )}
     </With>
@@ -261,12 +299,13 @@ export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
           <MediaPlayer />
         </box>
         <box halign={Gtk.Align.CENTER} $type="center">
-          <Title />
+          <Title monitor_id={monitor_id} />
         </box>
         <box halign={Gtk.Align.END} $type="end">
           <box hexpand={true} />
           <Wifi />
           <BT />
+          <Bat/>
           <Time />
         </box>
       </centerbox>

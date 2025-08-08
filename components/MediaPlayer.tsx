@@ -1,14 +1,14 @@
 import { Accessor, createBinding, createState, For, Setter, State, This } from "ags";
 import { register } from "ags/gobject";
-import { Gdk, Gtk } from "ags/gtk4";
+import { Gtk } from "ags/gtk4";
 import Mpris from "gi://AstalMpris";
 import { ScrolledLabel } from "./ScrollingText";
 import { MusicControls } from "./MusicControls";
+import { cursorPointer } from "../util";
 
 interface MediaPlayerProps extends Partial<Gtk.Box> {
 }
 
-const cursorPointer = Gdk.Cursor.new_from_name("pointer", null)
 const mpris = Mpris.get_default();
 
 const [skipLive, setSkipLive] = createState(false);
@@ -35,7 +35,7 @@ export class MediaPlayer extends Gtk.Box {
   volumeScroll() {
     let controller = new Gtk.EventControllerScroll({
       name: "CoverVolumeScroll",
-      flags: Gtk.EventControllerScrollFlags.VERTICAL // idk if necessary
+      flags: Gtk.EventControllerScrollFlags.VERTICAL
     });
 
     controller.connect("scroll", (_src, _dx, dy) => {
@@ -51,7 +51,7 @@ export class MediaPlayer extends Gtk.Box {
   playerScroll(callback: (player: Mpris.Player) => void) {
     let controller = new Gtk.EventControllerScroll({
       name: "CoverVolumeScroll",
-      flags: Gtk.EventControllerScrollFlags.VERTICAL // idk if necessary
+      flags: Gtk.EventControllerScrollFlags.VERTICAL
     });
 
     controller.connect("scroll", (_src, _dx, dy) => {
@@ -120,6 +120,8 @@ export class MediaPlayer extends Gtk.Box {
                       }}
                       class="BigCover"
                       tooltipText={createBinding(player, "title").as(title => { // not binding for checkbox cause dont want to skip mid song
+                        if (!title)
+                          return "";
                         if (title.toLowerCase().includes("live") && skipLive.get()) {
                           player.position = player.length;// - 0.1
                         }

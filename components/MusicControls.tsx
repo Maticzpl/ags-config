@@ -1,7 +1,8 @@
 import { createBinding, This } from "ags";
 import { getter, register, setter } from "ags/gobject";
-import { Gdk, Gtk } from "ags/gtk4";
+import { Gtk } from "ags/gtk4";
 import AstalMpris from "gi://AstalMpris?version=0.1";
+import { cursorPointer } from "../util";
 
 interface MusicControlsProps extends Partial<Gtk.Box> {
   player: AstalMpris.Player,
@@ -9,8 +10,6 @@ interface MusicControlsProps extends Partial<Gtk.Box> {
   showShuffle?: boolean,
   showLoop?: boolean
 }
-
-let cursorPointer = Gdk.Cursor.new_from_name("pointer", null)
 
 @register({ Implements: [Gtk.Buildable], CssName: "MusicControls" })
 export class MusicControls extends Gtk.Box {

@@ -27,6 +27,7 @@
       battery
       mpris
       network
+      
       tray
       apps
 
@@ -39,6 +40,7 @@
       ++ [
         pkgs.libadwaita
         pkgs.libsoup_3
+        pkgs.gtk4
       ];
   in {
     packages.${system} = {
@@ -75,7 +77,13 @@
             inherit extraPackages;
           })
           pkgs.nodejs
-        ];
+
+          pkgs.glib
+          pkgs.gobject-introspection
+          pkgs.libadwaita
+          pkgs.libsoup_3
+          pkgs.gtk4
+        ] ++ astalPackages;
       };
     };
   };

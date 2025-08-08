@@ -33,6 +33,27 @@ ScrolledLabel {
   }
 }
 
+.BatteryBig {
+  .Canvas {
+    margin: 10px;
+    margin-bottom: 5px;
+    border: 1px solid #FFF9;
+  }
+
+  .ProcData {
+    background-color: #FFFFFF09;
+    .ProcDataHeader {
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .FlowBox {
+      padding-right: 5px;
+      padding-left: 5px;
+    }
+  }
+}
+
+
 window.Bar {
   background: transparent;
   color: $fg-color;
@@ -48,9 +69,13 @@ window.Bar {
     margin: 2px;
   }
 
-  .Wifi, .Bluetooth {
+  .Wifi, .Bluetooth, .Battery {
     margin-left: 2px;
     margin-right: 2px;
+  }
+
+  .Battery label {
+    margin-left: 4px;  
   }
 
   .Time {
