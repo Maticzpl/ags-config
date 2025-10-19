@@ -1,7 +1,7 @@
 import app from "ags/gtk4/app"
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
-import { Accessor, createBinding, createComputed, For, With } from "ags"
+import { Accessor, createBinding, createComputed, createState, For, State, With } from "ags"
 import Hyprland from "gi://AstalHyprland"
 import Apps from "gi://AstalApps"
 import Tray from "gi://AstalTray"
@@ -9,7 +9,7 @@ import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
 import { MediaPlayer } from "../../components/MediaPlayer"
-import { Bat } from "./Battery"
+// import { Bat } from "./Battery"
 import { cursorPointer, stringLimit } from "../../util"
 
 function Time() {
@@ -44,46 +44,26 @@ function Time() {
 
 function Title(props: { monitor_id: number }) {
   const hypr = Hyprland.get_default();
-  const monitor = createBinding(hypr, "monitors").as(m => m[props.monitor_id])
-  const ws = createBinding(monitor.get(), "activeWorkspace") // TODO: DONT USE .get
-
-  // const title = monitor(
-  // m => createBinding(m, "activeWorkspace")
-  //   (ws => 
-  //     createComputed(
-  //       [createBinding(ws, "lastClient"), createBinding(hypr, "focusedClient")],
-  //       (wsClient, focused) => {
-  //         if (focused?.monitor.id == monitor.get().id)
-  //           return focused;
-  //         else
-  //           return wsClient;
-  //       }
-  //     )
-  //     (cl => createBinding(cl, "title"))
-  //   )
-  // )
-
-  // return <WithAll value={title}>
-  //   {t => <label label={stringLimit(50)(t)} />}
-  // </WithAll>
+  const [getLastClient, setLastClient] = createState(hypr.focusedClient);
 
   return <box class="windowTitle" >
-    <With value={ws}>
-      {ws => (
-        <box><With value={createComputed(
-            [createBinding(ws, "lastClient"), createBinding(hypr, "focusedClient")],
-            (wsClient, focused) => {
-              if (focused?.monitor?.id == monitor.get().id)
-                return focused;
-              else
-                return wsClient;
-            })}>
-          {(cl: Hyprland.Client) => 
-              cl && <label label={createBinding(cl, "title").as(stringLimit(50))} />
+    <With value={
+      createBinding(hypr, "focusedClient").as(
+        (focused) => {
+          if (!focused)
+            return null;
+
+          if (focused.monitor?.id == props.monitor_id) {
+            setLastClient(focused);
+            return focused;
           }
-        </With></box>
-      )}
-    </With>
+          else
+            return getLastClient.get();
+      })}>
+      {(cl: Hyprland.Client | null) => 
+        cl && <label label={createBinding(cl, "title").as(stringLimit(50))} />
+      }
+    </With> 
   </box>
 }
 
@@ -305,7 +285,6 @@ export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
           <box hexpand={true} />
           <Wifi />
           <BT />
-          <Bat/>
           <Time />
         </box>
       </centerbox>

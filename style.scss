@@ -4,6 +4,7 @@ $bg-color: #{"@theme_bg_color"};
 
 @define-color theme_bg_color_transparent alpha(#{$bg_color}, 0.85);
 @define-color theme_bg_color_darker shade(#{$bg_color}, 0.9);
+@define-color theme_bg_color_lighter shade(#{$bg_color}, 2.0);
 
 MusicControls {
   button {
@@ -19,6 +20,7 @@ MusicControls {
 popover contents {
   padding: 0;
   box-shadow: 0px 0px 20px 1px #FFF1;
+  border: 1px solid #{"@theme_bg_color_lighter"};
 }
 
 ScrolledLabel {
@@ -62,6 +64,7 @@ window.Bar {
 
   > centerbox {
     background: $bg-color;//#{"@theme_bg_color_transparent"}; 
+    border-bottom: 1px solid #{"@theme_bg_color_lighter "};
   }
 
   button {
@@ -211,16 +214,16 @@ window.Bar {
     }
 
     .xp1 {
-      border-left: 1px solid $fg-color;
+      border-left: 1px solid #{"@theme_bg_color_lighter"};
     }
     .yp1 {
-      border-top: 1px solid $fg-color;
+      border-top: 1px solid #{"@theme_bg_color_lighter"};
     }
     .xp#{$totalWidth} {
-      border-right: 1px solid $fg-color;
+      border-right: 1px solid #{"@theme_bg_color_lighter"};
     }
     .yp#{$totalHeight} {
-      border-bottom: 1px solid $fg-color;
+      border-bottom: 1px solid #{"@theme_bg_color_lighter"};
     }
   }
 }

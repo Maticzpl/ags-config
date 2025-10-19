@@ -83,6 +83,9 @@
           pkgs.libadwaita
           pkgs.libsoup_3
           pkgs.gtk4
+
+          pkgs.atop
+          pkgs.jq
         ] ++ astalPackages;
       };
     };

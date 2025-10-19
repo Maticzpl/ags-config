@@ -278,7 +278,7 @@ export function Bat() {
   };
 
   // TODO: Nice graph of charge over time?
-  return <box class="Battery" valign={Gtk.Align.CENTER}>
+  return <box class="Battery" valign={Gtk.Align.CENTER} visible={battery.isPresent}>
     {(battery && 
       <menubutton
         cursor={cursorPointer}
