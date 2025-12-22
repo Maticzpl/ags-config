@@ -9,7 +9,7 @@ import Network from "gi://AstalNetwork"
 import Bluetooth from "gi://AstalBluetooth"
 import { exec } from "ags/process"
 import { MediaPlayer } from "../../components/MediaPlayer"
-// import { Bat } from "./Battery"
+import { Bat } from "./Battery"
 import { cursorPointer, stringLimit } from "../../util"
 
 function Time() {
@@ -285,6 +285,7 @@ export default function Bar(gdkmonitor: Gdk.Monitor, monitor_id: number) {
           <box hexpand={true} />
           <Wifi />
           <BT />
+          <Bat />
           <Time />
         </box>
       </centerbox>

@@ -192,7 +192,7 @@ export function Bat() {
     if (canRefresh) {
       const date = exec("date +'%Y%m%d'");
       const dateYesterday = exec("date -d 'yesterday' +'%Y%m%d'");
-      const logPath = "/home/maticzpl/.local/share/batlogs";
+      const logPath = "~/.local/share/batlogs";
       const dataYesterday = readFile(`${logPath}/${dateYesterday}.csv`).split("\n");
       const dataToday = readFile(`${logPath}/${date}.csv`).split("\n");
       points = parseData(dataYesterday, dataToday);
