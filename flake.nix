@@ -19,6 +19,8 @@
     pkgs = nixpkgs.legacyPackages.${system};
     pname = "custom-widgets";
     entry = "app.ts";
+    lib = pkgs.lib;
+    nix-gitignore = pkgs.nix-gitignore;
 
     astalPackages = with ags.packages.${system}; [
       io
@@ -47,9 +49,14 @@
       default = pkgs.stdenv.mkDerivation {
         name = pname;
         src = ./.;
+        # nix-gitignore.gitignoreFilterPure [
+        #   "node_modules/"
+        #   "@girs/"
+        #   ".nvimexepath.txt"
+        # ] ./. #(lib.cleanSource ./. or smth like that);
 
         nativeBuildInputs = with pkgs; [
-          wrapGAppsHook
+          wrapGAppsHook3
           gobject-introspection
           ags.packages.${system}.default
         ];
