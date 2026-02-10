@@ -19,7 +19,6 @@
     pkgs = nixpkgs.legacyPackages.${system};
     pname = "custom-widgets";
     entry = "app.ts";
-    lib = pkgs.lib;
     nix-gitignore = pkgs.nix-gitignore;
 
     astalPackages = with ags.packages.${system}; [
@@ -43,12 +42,16 @@
         pkgs.libadwaita
         pkgs.libsoup_3
         pkgs.gtk4
+
+        pkgs.atop
+        pkgs.jq
+        pkgs.bash
       ];
   in {
     packages.${system} = {
       default = pkgs.stdenv.mkDerivation {
         name = pname;
-        src = ./.;
+        src = nix-gitignore.gitignoreSource [] ./.;
         # nix-gitignore.gitignoreFilterPure [
         #   "node_modules/"
         #   "@girs/"
@@ -90,9 +93,6 @@
           pkgs.libadwaita
           pkgs.libsoup_3
           pkgs.gtk4
-
-          pkgs.atop
-          pkgs.jq
         ] ++ astalPackages;
       };
     };
